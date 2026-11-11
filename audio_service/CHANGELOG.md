@@ -2,6 +2,8 @@
 
 * Fix AudioServicePlugin not reporting playing state to iOS versions >= 13.0 (@marckornberger).
 * Fix deprecated initWithImage (@SoWrongImRight).
+* Android (fork): re-register the handler as the service listener on every call from Dart and when the service is recreated, so notification, lock-screen and headset commands are no longer dropped in release builds.
+* Android (fork): if the notification icon resolves to 0, fall back to the app's `com.google.firebase.messaging.default_notification_icon` meta-data, then the launcher icon, instead of throwing "Invalid notification (no valid small icon)".
 
 ## 0.18.19
 
