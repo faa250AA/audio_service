@@ -7,6 +7,7 @@ import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.AudioManager;
@@ -305,6 +306,7 @@ public class AudioService extends MediaBrowserServiceCompat {
     public void onCreate() {
         super.onCreate();
         instance = this;
+        AudioServicePlugin.reattachListener(); // Fork
         repeatMode = 0;
         shuffleMode = 0;
         notificationCreated = false;
@@ -417,6 +419,17 @@ public class AudioService extends MediaBrowserServiceCompat {
         String resourceType = parts[0];
         String resourceName = parts[1];
         return getResources().getIdentifier(resourceName, resourceType, getApplicationContext().getPackageName());
+    }
+
+    /** The app's `com.google.firebase.messaging.default_notification_icon` manifest meta-data, or 0. */
+    private int getDefaultNotificationIconId() {
+        try {
+            Bundle metaData = getPackageManager()
+                    .getApplicationInfo(getPackageName(), PackageManager.GET_META_DATA).metaData;
+            return metaData == null ? 0 : metaData.getInt("com.google.firebase.messaging.default_notification_icon", 0);
+        } catch (PackageManager.NameNotFoundException e) {
+            return 0;
+        }
     }
 
     NotificationCompat.Action createAction(String resource, String label, long actionCode) {
@@ -673,6 +686,12 @@ public class AudioService extends MediaBrowserServiceCompat {
             ;
         }
         int iconId = getResourceId(config.androidNotificationIcon);
+        // Fork: a stale prefs icon name (or one stripped by the resource
+        // shrinker) resolves to 0, and notify() then throws "Invalid
+        // notification (no valid small icon)". Fall back to the app's FCM
+        // status-bar icon, then the launcher icon.
+        if (iconId == 0) iconId = getDefaultNotificationIconId();
+        if (iconId == 0) iconId = getApplicationInfo().icon;
         notificationBuilder.setSmallIcon(iconId);
         return notificationBuilder;
     }

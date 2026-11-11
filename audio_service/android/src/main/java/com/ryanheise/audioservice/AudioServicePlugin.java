@@ -135,6 +135,11 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
     private static final Set<ClientInterface> clientInterfaces = new HashSet<>();
     private static ClientInterface mainClientInterface;
     private static AudioHandlerInterface audioHandlerInterface;
+
+    // Fork: lets AudioService restore its listener when it's recreated.
+    static void reattachListener() {
+        if (audioHandlerInterface != null) AudioService.init(audioHandlerInterface);
+    }
     private static final long bootTime;
     private static Result configureResult;
     private static boolean flutterReady;
@@ -831,6 +836,11 @@ public class AudioServicePlugin implements FlutterPlugin, ActivityAware {
 
         @Override
         public void onMethodCall(MethodCall call, Result result) {
+            // Fork: re-register as the service listener on every call from the
+            // handler (setState etc.). Upstream registers only once, and in
+            // release builds the listener was sometimes null, so notification /
+            // lock-screen / headset commands were silently dropped.
+            if (audioHandlerInterface == this) AudioService.init(this);
             try {
                 Map<?, ?> args = (Map<?, ?>)call.arguments;
                 switch (call.method) {
