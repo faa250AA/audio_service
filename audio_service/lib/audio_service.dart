@@ -1204,6 +1204,7 @@ class AudioService {
         });
       },
       onCancel: () {
+        currentTimer?.cancel();
         mediaItemSubscription.cancel();
         playbackStateSubscription.cancel();
       },

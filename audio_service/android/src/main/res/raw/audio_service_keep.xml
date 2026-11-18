@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The built-in MediaControl icons are resolved by name at runtime via
+  Resources.getIdentifier(), which the resource shrinker cannot see.
+  Without this rule release builds strip every audio_service_* drawable,
+  leaving the notification actions with icon id 0, so no buttons are drawn.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/audio_service_*" />

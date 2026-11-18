@@ -355,6 +355,13 @@ public class AudioService extends MediaBrowserServiceCompat {
     }
 
     public void stop() {
+        releaseWakeLock();
+        // A foreground service's notification can't be cancelled through
+        // NotificationManager, and stopSelf() won't destroy the service while
+        // the app's activity is still bound, so leave the foreground here,
+        // before the session is deactivated.
+        ServiceCompat.stopForeground(this, STOP_FOREGROUND_REMOVE);
+        notificationCreated = false;
         deactivateMediaSession();
         stopSelf();
     }
@@ -569,13 +576,17 @@ public class AudioService extends MediaBrowserServiceCompat {
         mediaSession.setShuffleMode(shuffleMode);
         mediaSession.setCaptioningEnabled(captioningEnabled);
 
+        boolean stopping = oldProcessingState != AudioProcessingState.idle && processingState == AudioProcessingState.idle;
         if (!wasPlaying && playing) {
             enterPlayingState();
-        } else if (wasPlaying && !playing) {
+        } else if (wasPlaying && !playing && !stopping) {
+            // When stopping, stop() removes the notification itself. Detaching
+            // it here first re-posts it asynchronously, which can land after
+            // stop()'s cancel and leave a stale notification behind.
             exitPlayingState();
         }
 
-        if (oldProcessingState != AudioProcessingState.idle && processingState == AudioProcessingState.idle) {
+        if (stopping) {
             // TODO: Handle completed state as well?
             stop();
         } else if (processingState != AudioProcessingState.idle && notificationChanged) {
@@ -732,6 +743,9 @@ public class AudioService extends MediaBrowserServiceCompat {
     }
 
     private void exitPlayingState() {
+        // Nothing needs the CPU while paused, even if the service stays in the
+        // foreground, so the wake lock is released either way.
+        releaseWakeLock();
         if (config.androidStopForegroundOnPause) {
             exitForegroundState();
         }
