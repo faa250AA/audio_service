@@ -1,3 +1,12 @@
+## 0.18.21
+
+* Android (fork): keep the `audio_service_*` notification icons from the resource shrinker. They are looked up by name, so release builds stripped them, and on Android 13+ every playback state update then threw "You must specify an icon resource id to build a CustomAction": no notification, lock-screen controls or foreground service (upstream #1167).
+* Android (fork): release the wake lock on every pause, even when the service stays in the foreground (upstream #1171).
+* Android (fork): `stop()` removes the foreground notification, and going straight from playing to idle no longer detaches it first, which left a stale ongoing notification behind (upstream #1168, with an ordering fix).
+* Android (fork): keep the full URI, including scheme, host and fragment, as the initial route of a cold-start deep link, as Flutter does (upstream #1163).
+* Cancel the `AudioService.position` timer when the stream is cancelled (upstream #1036).
+* Remove the unused `js` dependency (upstream #1173).
+
 ## 0.18.20
 
 * Fix AudioServicePlugin not reporting playing state to iOS versions >= 13.0 (@marckornberger).
